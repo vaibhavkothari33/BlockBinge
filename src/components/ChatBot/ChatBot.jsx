@@ -43,8 +43,10 @@ const ChatBot = () => {
   // );
 
   const langflowClient = new LangflowClient(
-    'https://api.langflow.astra.datastax.com',  // Use direct URL always
-    import.meta.env.VITE_ASTRA_DB_TOKEN
+    process.env.NODE_ENV === 'production'
+      ? 'https://api.langflow.astra.datastax.com'  // Base URL for production
+      : '/api/langflow',  // Proxy URL for development
+    ASTRA_DB_TOKEN
   );
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
