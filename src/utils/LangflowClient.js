@@ -4,25 +4,27 @@ export class LangflowClient {
         this.applicationToken = applicationToken;
     }
 
-    async post(endpoint, body, headers = {"Content-Type": "application/json"}) {
-        headers["Authorization"] = `Bearer ${this.applicationToken}`;
-        headers["Content-Type"] = "application/json";
+    async post(endpoint, body) {
         const url = `${this.baseURL}${endpoint}`;
         
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.applicationToken}`,
+                },
+                mode: 'cors',
+                credentials: 'omit',
                 body: JSON.stringify(body)
             });
 
-            const responseMessage = await response.json();
             if (!response.ok) {
-                throw new Error(`${response.status} ${response.statusText} - ${JSON.stringify(responseMessage)}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return responseMessage;
+            return await response.json();
         } catch (error) {
-            console.error('Request Error:', error.message);
+            console.error('Request Error:', error);
             throw error;
         }
     }

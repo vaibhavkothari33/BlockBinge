@@ -43,10 +43,8 @@ const ChatBot = () => {
   // );
 
   const langflowClient = new LangflowClient(
-    process.env.NODE_ENV === 'production'
-      ? 'https://api.langflow.astra.datastax.com'  // Base URL for production
-      : '/api/langflow',  // Proxy URL for development
-    ASTRA_DB_TOKEN
+    'https://api.langflow.astra.datastax.com',  // Use direct URL always
+    import.meta.env.VITE_ASTRA_DB_TOKEN
   );
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -63,16 +61,12 @@ const ChatBot = () => {
 
     try {
       const response = await langflowClient.runFlow(
-        '180be5c2-5808-490f-9a58-7555eea049b3', // Your flowId
-        '79f415bc-232b-446f-b7cf-983ee7bb5c66', // Your langflowId
+        '180be5c2-5808-490f-9a58-7555eea049b3',
+        '79f415bc-232b-446f-b7cf-983ee7bb5c66',
         inputMessage,
         'chat',
         'chat',
-        {},
-        false,
-        (data) => console.log("Received:", data),
-        (message) => console.log("Closed:", message),
-        (error) => console.error("Error:", error)
+        {}
       );
 
       console.log('Full response:', response);
