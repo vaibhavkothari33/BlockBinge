@@ -37,11 +37,17 @@ const ChatBot = () => {
     }
   }, [messages, isOpen]);
 
+  // const langflowClient = new LangflowClient(
+  //   '/api/langflow', // This will be proxied in your app
+  //   ASTRA_DB_TOKEN
+  // );
+
   const langflowClient = new LangflowClient(
-    '/api/langflow', // This will be proxied in your app
+    process.env.NODE_ENV === 'production'
+      ? 'https://blockbinge.vercel.app/api/langflow'
+      : '/api/langflow',
     ASTRA_DB_TOKEN
   );
-
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
