@@ -12,6 +12,7 @@ import {
   FaClock
 } from 'react-icons/fa';
 import screenfull from 'screenfull';
+import { useNavigate } from 'react-router-dom';
 import { startStream } from '../../utils/contract1';
 import { ethers } from 'ethers';
 // import StreamingPlatform from '../../artifacts/contracts/StreamingPlatform.sol/StreamingPlatform.json';
@@ -22,7 +23,12 @@ const getContract = async () => {
   try {
     if (!window.ethereum) throw new Error("No crypto wallet found");
     await window.ethereum.request({ method: 'eth_requestAccounts' });
-    return CreateContract();
+    const contract = await CreateContract();
+
+    // Debug log to check available contract methods
+    console.log('Contract methods:', Object.keys(contract.functions));
+
+    return contract;
   } catch (error) {
     console.error('Error getting contract:', error);
     throw error;
@@ -31,7 +37,7 @@ const getContract = async () => {
 
 const updateWatchTime = async (movieId, duration) => {
   try {
-    const contract = await getContract(); // Get your contract instance
+    const contract = await getContract();
     const tx = await contract.updateWatchTime(movieId, Math.floor(duration));
     await tx.wait();
     return true;
@@ -43,6 +49,7 @@ const updateWatchTime = async (movieId, duration) => {
 
 
 const VideoPlayer = ({ movie }) => {
+  const navigate = useNavigate(); // Add this line
 
   const [totalWatchTime, setTotalWatchTime] = useState(0);
   const [lastBillingTime, setLastBillingTime] = useState(0);
@@ -51,6 +58,7 @@ const VideoPlayer = ({ movie }) => {
   const billingIntervalRef = useRef(null);
   const BILLING_INTERVAL = 10; // Bill every 60 seconds
   const RATE_PER_MINUTE = 0.001;
+  const [isClosing, setIsClosing] = useState(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -88,29 +96,73 @@ const VideoPlayer = ({ movie }) => {
       }, BILLING_INTERVAL * 1000);
     }
   };
+  const getContract = async () => {
+    try {
+      if (!window.ethereum) throw new Error("No crypto wallet found");
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const contract = await CreateContract();
 
+      // Debug log to check available contract methods
+      console.log('Contract methods:', Object.keys(contract.functions));
+
+      return contract;
+    } catch (error) {
+      console.error('Error getting contract:', error);
+      throw error;
+    }
+  };
+
+  const handleClose = async () => {
+    try {
+      setIsClosing(true);
+
+      // Pause the video first
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+
+      // Stop tracking and get final watch time
+      if (isWatchTimeTracking) {
+        await stopWatchTimeTracking();
+      }
+
+      // Process final payment
+      if (totalWatchTime > 0) {
+        await processFinalPayment(totalWatchTime);
+      }
+
+      // Navigate back to browser route and refresh
+      navigate('/browse', { replace: true }); // Use replace to replace current history entry
+      window.location.reload(); // Force refresh the page
+
+    } catch (error) {
+      console.error('Error during close:', error);
+    } finally {
+      setIsClosing(false);
+    }
+  };
   const stopWatchTimeTracking = async () => {
     if (isWatchTimeTracking) {
-      setIsWatchTimeTracking(false);
-      clearInterval(billingIntervalRef.current);
-  
-      // Final billing for remaining time
-      const currentTime = Date.now();
-      const finalWatchDuration = (currentTime - watchTimeRef.current) / 1000;
-  
-      if (finalWatchDuration > 0) {
-        await updateWatchTime(movie.id - 1, finalWatchDuration);
-        const newTotalWatchTime = totalWatchTime + finalWatchDuration;
-        setTotalWatchTime(newTotalWatchTime);
-        
-        // This will trigger MetaMask
-        await processFinalPayment(newTotalWatchTime);
+      try {
+        setIsWatchTimeTracking(false);
+        clearInterval(billingIntervalRef.current);
 
-      // Final billing for remaining time
-   
+        const currentTime = Date.now();
+        const finalWatchDuration = (currentTime - watchTimeRef.current) / 1000;
+
+        if (finalWatchDuration > 0) {
+          await updateWatchTime(movie.id - 1, finalWatchDuration);
+          const newTotalWatchTime = totalWatchTime + finalWatchDuration;
+          setTotalWatchTime(newTotalWatchTime);
+        }
+      } catch (error) {
+        console.error('Error in stopWatchTimeTracking:', error);
       }
     }
   };
+
+
   // Direct video URLs array
   const videoUrls = {
 
@@ -144,6 +196,7 @@ const VideoPlayer = ({ movie }) => {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  // Update togglePlay to only stop tracking
   const togglePlay = async () => {
     if (videoRef.current) {
       try {
@@ -154,7 +207,7 @@ const VideoPlayer = ({ movie }) => {
           startWatchTimeTracking();
         } else {
           videoRef.current.pause();
-          await stopWatchTimeTracking();
+          await stopWatchTimeTracking(); // This will now only stop tracking, not process payment
         }
         setIsPlaying(!isPlaying);
       } catch (error) {
@@ -164,10 +217,12 @@ const VideoPlayer = ({ movie }) => {
   };
 
   useEffect(() => {
-
     const handleUnmount = async () => {
       if (isWatchTimeTracking) {
         await stopWatchTimeTracking();
+        if (totalWatchTime > 0) {
+          await processFinalPayment(totalWatchTime);
+        }
       }
     };
 
@@ -178,7 +233,7 @@ const VideoPlayer = ({ movie }) => {
       handleUnmount();
     };
   }, [isWatchTimeTracking, totalWatchTime]);
-  
+
 
   const formatBilling = (watchTimeInSeconds) => {
     const minutes = Math.ceil(watchTimeInSeconds / 60);
@@ -237,13 +292,12 @@ const VideoPlayer = ({ movie }) => {
 
       const contract = await getContract();
 
-      // Send transaction with value
-      const tx = await contract.processPayment(movie.id - 1, {
-        value: costInWei,
-        gasLimit: 500000 // Adjust gas limit as needed
-      });
+      // Use addPendingPayment instead of processPayment
+      const tx = await contract.addPendingPayment(
+        window.ethereum.selectedAddress, // user address
+        costInWei // amount in Wei
+      );
 
-      // Wait for transaction confirmation
       await tx.wait();
 
       console.log(`Final payment processed: ${costInETH} ETH`);
@@ -253,6 +307,7 @@ const VideoPlayer = ({ movie }) => {
       return false;
     }
   };
+
 
 
   const skipTime = (seconds) => {
@@ -286,7 +341,7 @@ const VideoPlayer = ({ movie }) => {
       }
     };
   }, [movie]);
-  
+
 
   if (!movie) {
     return (
@@ -298,6 +353,28 @@ const VideoPlayer = ({ movie }) => {
 
   return (
     <div ref={containerRef} className="relative w-full h-full bg-black group">
+      <button
+        onClick={handleClose}
+        className="absolute top-6 right-6 z-50 w-12 h-12 flex items-center justify-center 
+  bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+      >
+        <svg
+          className="w-8 h-8" // Increased from w-4 h-4
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5} // Increased stroke width for better visibility
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+      {/* Loading spinner when closing */}
+
       <div
         ref={containerRef}
         className="relative w-full h-full bg-black group"
@@ -450,6 +527,12 @@ const VideoPlayer = ({ movie }) => {
           </div>
         </div>
       </div>
+      {isClosing && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        </div>
+      )}
+
     </div >
   );
 };
