@@ -30,14 +30,23 @@ const VideoPlayer = ({ movie }) => {
 
   // Direct video URLs array
   const videoUrls = {
+   
     1: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/PK%20Official%20Teaser%20Trailer%201%20(2014)%20-%20Comedy%20Movie%20HD.mp4",
+   
     2: "https://bafybeiajhp6f5rpiu4wvazgzq3scxilkeevdvngkrhny42x3oo7hrs6hbq.ipfs.w3s.link/VID-20250221-WA0059.mp4",
+   
     3: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
+   
     4: "https://bafybeihbf2lbp6l6j2uqbxxlsbj3k737jcfnqy7fzj7aexanhltcgg3dlm.ipfs.w3s.link/VID-20250221-WA0061.mp4",
-    5: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/The%20Conjuring%20-%20Official%20Trailer.mp4",
+   
+    5: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
+   
     6: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Interstellar%20-%20Official%20Trailer.mp4",
+   
     7: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Get%20Out%20-%20Official%20Trailer.mp4",
-    8: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/The%20Grand%20Budapest%20Hotel%20-%20Official%20Trailer.mp4",
+   
+    8: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
+   
     9: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Parasite%20-%20Official%20Trailer.mp4"
   };
 

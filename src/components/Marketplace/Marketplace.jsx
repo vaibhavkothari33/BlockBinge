@@ -60,12 +60,22 @@ const Marketplace = () => {
     {
       id: 3,
       title: "Interstellar",
-      image: "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
-      price: 0.002,
-      owner: account || "0x5432...8765", // Use connected account as owner for testing
-      forSale: false,
+      image: "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_.jpg",
+      price: 0.0022,
+      owner: account || "0xE5b6Dec0fE7d9115Fb093E334172A288f6bdB2b8", // Use connected account as owner for testing
+      forSale: true,
       description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
       tokenId: 3
+    },
+    {
+      id: 4,
+      title: "Interstellar",
+      image: "https://m.media-amazon.com/images/M/MV5BZjdkOTU3MDktN2IxOS00OGEyLWFmMjktY2FiMmZkNWIyODZiXkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg",
+      price: 0.002,
+      owner: account || "0xE5b6Dec0fE7d9115Fb093E334172A288f6bdB2b8", // Use connected account as owner for testing
+      forSale: false,
+      description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+      tokenId: 4
     }
   ];
 
