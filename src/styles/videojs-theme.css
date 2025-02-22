@@ -1,0 +1,107 @@
+/* Import this in your main CSS file */
+
+.video-js {
+  /* Player dimensions */
+  width: 100% !important;
+  height: 100% !important;
+  font-size: 16px;
+  aspect-ratio: 16/9;
+  /* Custom styles */
+  --vjs-theme-forest--primary: #1eb854;
+  --vjs-theme-forest--secondary: #fff;
+}
+
+.video-js.vjs-fill {
+  width: 100%;
+  height: 100%;
+}
+
+.video-js .vjs-tech {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-js .vjs-control-bar {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+  height: 4em;
+  padding: 0 1em;
+}
+
+.video-js .vjs-big-play-button {
+  background-color: rgba(30, 184, 84, 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 3em;
+  height: 3em;
+  line-height: 3em;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video-js:hover .vjs-big-play-button {
+  background-color: rgb(30, 184, 84);
+}
+
+.video-js .vjs-progress-control {
+  position: absolute;
+  width: 100%;
+  top: -1em;
+  height: 0.5em;
+}
+
+.video-js .vjs-progress-control:hover {
+  height: 1em;
+  top: -1.5em;
+}
+
+.video-js .vjs-progress-holder {
+  height: 100%;
+}
+
+.video-js .vjs-play-progress {
+  background-color: rgb(30, 184, 84);
+}
+
+.video-js .vjs-volume-panel {
+  margin-right: 1em;
+}
+
+.video-js .vjs-volume-control.vjs-volume-vertical {
+  height: 8em;
+}
+
+.vjs-theme-forest {
+  --vjs-theme-forest--primary: rgb(30, 184, 84);
+}
+
+.vjs-theme-forest .vjs-button > .vjs-icon-placeholder:before {
+  line-height: 2.2;
+}
+
+.vjs-theme-forest .vjs-play-progress:before {
+  display: none;
+}
+
+.vjs-theme-forest .vjs-progress-control {
+  position: absolute;
+  top: -2em;
+  width: 100%;
+  height: 0.6em;
+}
+
+.vjs-theme-forest .vjs-progress-control .vjs-progress-holder {
+  margin: 0;
+  height: 0.6em;
+}
+
+.vjs-theme-forest .vjs-remaining-time {
+  display: none;
+}
+
+.vjs-theme-forest .vjs-playback-rate .vjs-playback-rate-value {
+  line-height: 2.2;
+} 
