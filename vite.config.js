@@ -18,7 +18,7 @@ export default defineConfig({
       usePolling: true,
     },
     proxy: {
-      '/api/langflow': {
+      'https://blockbinge.vercel.app/': {
         target: 'https://api.langflow.astra.datastax.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/langflow/, '')
