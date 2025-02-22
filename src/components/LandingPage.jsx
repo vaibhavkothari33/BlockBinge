@@ -407,40 +407,41 @@ const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-32 h-32 rounded-full bg-dark mx-auto mb-6 flex items-center justify-center">
-                <FaCode className="text-4xl text-primary" />
+                {/* <FaCode className="text-4xl text-primary" /> */}
+                <img className='w-32 h-32 rounded-full' src="https://avatars.githubusercontent.com/u/129139486?s=400&u=2ba574b1b840c3083f52c3bc166952fdb4f38e89&v=4" alt="" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Vaibhav Kothari</h3>
-              <p className="text-gray-400 mb-4">Lead Developer</p>
+              <p className="text-gray-400 mb-4">Full Stack Developer</p>
               <div className="flex justify-center gap-4">
-                <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
+                <a href="https://github.com/vaibhavkothari33" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaGithub className="text-2xl" />
                 </a>
-                <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
+                <a href="https://linkedin.com/in/vaibhavkothari33" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaLinkedin className="text-2xl" />
                 </a>
               </div>
             </div>
             <div className="text-center">
               <div className="w-32 h-32 rounded-full bg-dark mx-auto mb-6 flex items-center justify-center">
-                <FaCode className="text-4xl text-primary" />
+              <img className='w-32 h-32 rounded-full' src="/abhigya.jpeg" alt="" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Abhigya Krishna</h3>
-              <p className="text-gray-400 mb-4">Lead Developer</p>
+              <p className="text-gray-400 mb-4">Blockchain Developer</p>
               <div className="flex justify-center gap-4">
                 <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaGithub className="text-2xl" />
                 </a>
-                <a href="https://linkedin.com/in/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
+                <a href="https://www.linkedin.com/in/abhigya-krishna/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaLinkedin className="text-2xl" />
                 </a>
               </div>
             </div>
             <div className="text-center">
               <div className="w-32 h-32 rounded-full bg-dark mx-auto mb-6 flex items-center justify-center">
-                <FaCode className="text-4xl text-primary" />
+              <img className='w-32 h-32 rounded-full' src="/shrijan.png" alt="" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Shrijan Katiyar</h3>
-              <p className="text-gray-400 mb-4">Lead Developer</p>
+              <p className="text-gray-400 mb-4">Blockchain Developer</p>
               <div className="flex justify-center gap-4">
                 <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaGithub className="text-2xl" />
@@ -452,10 +453,10 @@ const LandingPage = () => {
             </div>
             <div className="text-center">
               <div className="w-32 h-32 rounded-full bg-dark mx-auto mb-6 flex items-center justify-center">
-                <FaCode className="text-4xl text-primary" />
+              <img className='w-32 h-32 rounded-full' src="/navay.png" alt="" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Navya Rathore</h3>
-              <p className="text-gray-400 mb-4">Lead Developer</p>
+              <p className="text-gray-400 mb-4">AI Developer</p>
               <div className="flex justify-center gap-4">
                 <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary">
                   <FaGithub className="text-2xl" />

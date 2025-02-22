@@ -8,7 +8,6 @@ export class LangflowClient {
         headers["Authorization"] = `Bearer ${this.applicationToken}`;
         headers["Content-Type"] = "application/json";
         const url = `${this.baseURL}${endpoint}`;
-        
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -37,6 +36,28 @@ export class LangflowClient {
         });
     }
 
+    handleStream(streamUrl, onUpdate, onClose, onError) {
+        const eventSource = new EventSource(streamUrl);
+
+        eventSource.onmessage = event => {
+            const data = JSON.parse(event.data);
+            onUpdate(data);
+        };
+
+        eventSource.onerror = event => {
+            console.error('Stream Error:', event);
+            onError(event);
+            eventSource.close();
+        };
+
+        eventSource.addEventListener("close", () => {
+            onClose('Stream closed');
+            eventSource.close();
+        });
+
+        return eventSource;
+    }
+
     async runFlow(flowId, langflowId, inputValue, inputType = 'chat', outputType = 'chat', tweaks = {}, stream = false, onUpdate, onClose, onError) {
         try {
             const initResponse = await this.initiateSession(
@@ -55,4 +76,4 @@ export class LangflowClient {
             throw error;
         }
     }
-} 
+}
