@@ -103,9 +103,3 @@ export { startStream, pauseStream };
 // export const getContract = (provider) => {
 //   const signer = provider.getSigner();
 //   return new ethers.Contract(contractAddress, MovieNFT.abi, signer);
-<<<<<<< HEAD
-// };
-=======
-// };
-
->>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
