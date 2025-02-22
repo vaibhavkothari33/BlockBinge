@@ -57,25 +57,34 @@ const ChatBot = () => {
 
     try {
       const response = await langflowClient.runFlow(
-        '180be5c2-5808-490f-9a58-7555eea049b3',
-        '79f415bc-232b-446f-b7cf-983ee7bb5c66',
+        '180be5c2-5808-490f-9a58-7555eea049b3', // Your flowId
+        '79f415bc-232b-446f-b7cf-983ee7bb5c66', // Your langflowId
         inputMessage,
         'chat',
         'chat',
         {},
-        false
+        false,
+        (data) => console.log("Received:", data),
+        (message) => console.log("Closed:", message),
+        (error) => console.error("Error:", error)
       );
 
       console.log('Full response:', response);
 
       // Handle different response formats
       let botContent = '';
-      if (response?.outputs?.[0]?.outputs?.[0]?.message?.content) {
-        botContent = response.outputs[0].outputs[0].message.content;
-      } else if (response?.outputs?.[0]?.outputs?.[0]?.message?.text) {
-        botContent = response.outputs[0].outputs[0].message.text;
-      } else if (response?.outputs?.[0]?.message) {
-        botContent = response.outputs[0].message;
+      if (response?.outputs?.[0]?.outputs?.[0]?.outputs?.message?.message?.text) {
+        botContent = response.outputs[0].outputs[0].outputs.message.message.text;
+      } else if (response?.outputs?.[0]?.output) {
+        botContent = response.outputs[0].output;
+      } else if (response?.outputs?.[0]?.text) {
+        botContent = response.outputs[0].text;
+      } else if (response?.outputs?.[0]?.response) {
+        botContent = response.outputs[0].response;
+      } else if (response?.result) {
+        botContent = response.result;
+      } else if (typeof response === 'string') {
+        botContent = response;
       } else {
         console.error('Unexpected response format:', response);
         throw new Error('Could not parse AI response');
@@ -96,7 +105,7 @@ const ChatBot = () => {
       console.error('Chat Error:', error);
       setMessages(prev => [...prev, {
         type: 'bot',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'Sorry, I encountered an error understanding the response. Please try again.',
         timestamp: new Date().toISOString()
       }]);
     } finally {
