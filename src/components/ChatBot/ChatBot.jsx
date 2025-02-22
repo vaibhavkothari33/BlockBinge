@@ -44,8 +44,8 @@ const ChatBot = () => {
 
   const langflowClient = new LangflowClient(
     process.env.NODE_ENV === 'production'
-      ? 'https://blockbinge.vercel.app/api/langflow'
-      : '/api/langflow',
+      ? 'https://api.langflow.astra.datastax.com'  // Base URL for production
+      : '/api/langflow',  // Proxy URL for development
     ASTRA_DB_TOKEN
   );
   const handleSendMessage = async () => {
