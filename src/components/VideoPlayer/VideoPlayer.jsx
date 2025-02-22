@@ -1,18 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  FaPlay, 
-  FaPause, 
-  FaVolumeMute, 
+import {
+  FaPlay,
+  FaPause,
+  FaVolumeMute,
   FaVolumeUp,
   FaExpand,
   FaCompress,
   FaCog,
   FaForward,
-  FaBackward
+  FaBackward,
+  FaClock
 } from 'react-icons/fa';
 import screenfull from 'screenfull';
+import { startStream } from '../../utils/contract1';
+import { ethers } from 'ethers';
+// import StreamingPlatform from '../../artifacts/contracts/StreamingPlatform.sol/StreamingPlatform.json';
+import { CreateContract } from '../../utils/contract1';
+
+// Remove the existing getContract function and use this instead
+const getContract = async () => {
+  try {
+    if (!window.ethereum) throw new Error("No crypto wallet found");
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    return CreateContract();
+  } catch (error) {
+    console.error('Error getting contract:', error);
+    throw error;
+  }
+};
+const updateWatchTime = async (movieId, duration) => {
+  try {
+    const contract = await getContract(); // Get your contract instance
+    const tx = await contract.updateWatchTime(movieId, Math.floor(duration));
+    await tx.wait();
+    return true;
+  } catch (error) {
+    console.error('Error updating watch time:', error);
+    return false;
+  }
+};
+
 
 const VideoPlayer = ({ movie }) => {
+
+  const [totalWatchTime, setTotalWatchTime] = useState(0);
+  const [lastBillingTime, setLastBillingTime] = useState(0);
+  const [isWatchTimeTracking, setIsWatchTimeTracking] = useState(false);
+  const watchTimeRef = useRef(0);
+  const billingIntervalRef = useRef(null);
+  const BILLING_INTERVAL = 10; // Bill every 60 seconds
+  const RATE_PER_MINUTE = 0.001;
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,30 +61,72 @@ const VideoPlayer = ({ movie }) => {
   const [showControls, setShowControls] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
-  
+
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
+  const startWatchTimeTracking = () => {
+    if (!isWatchTimeTracking) {
+      setIsWatchTimeTracking(true);
+      watchTimeRef.current = Date.now();
+      billingIntervalRef.current = setInterval(async () => {
+        const currentTime = Date.now();
+        const watchDuration = (currentTime - watchTimeRef.current) / 1000; // Convert to seconds
+
+        if (watchDuration >= BILLING_INTERVAL) {
+          // Update blockchain with watch time
+          const success = await updateWatchTime(movie.id - 1, watchDuration);
+
+          if (success) {
+            setTotalWatchTime(prev => prev + watchDuration);
+            setLastBillingTime(currentTime);
+            watchTimeRef.current = currentTime;
+          }
+        }
+      }, BILLING_INTERVAL * 1000);
+    }
+  };
+
+
+  const stopWatchTimeTracking = async () => {
+    if (isWatchTimeTracking) {
+      setIsWatchTimeTracking(false);
+      clearInterval(billingIntervalRef.current);
+  
+      // Final billing for remaining time
+      const currentTime = Date.now();
+      const finalWatchDuration = (currentTime - watchTimeRef.current) / 1000;
+  
+      if (finalWatchDuration > 0) {
+        await updateWatchTime(movie.id - 1, finalWatchDuration);
+        const newTotalWatchTime = totalWatchTime + finalWatchDuration;
+        setTotalWatchTime(newTotalWatchTime);
+        
+        // This will trigger MetaMask
+        await processFinalPayment(newTotalWatchTime);
+      }
+    }
+  };
   // Direct video URLs array
   const videoUrls = {
-   
+
     1: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/PK%20Official%20Teaser%20Trailer%201%20(2014)%20-%20Comedy%20Movie%20HD.mp4",
-   
+
     2: "https://bafybeiajhp6f5rpiu4wvazgzq3scxilkeevdvngkrhny42x3oo7hrs6hbq.ipfs.w3s.link/VID-20250221-WA0059.mp4",
-   
+
     3: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
-   
+
     4: "https://bafybeihbf2lbp6l6j2uqbxxlsbj3k737jcfnqy7fzj7aexanhltcgg3dlm.ipfs.w3s.link/VID-20250221-WA0061.mp4",
-   
-    5: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
-   
+
+    5: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/The%20Conjuring%20-%20Official%20Trailer.mp4",
+
     6: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Interstellar%20-%20Official%20Trailer.mp4",
-   
+
     7: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Get%20Out%20-%20Official%20Trailer.mp4",
-   
-    8: "https://bafybeihl77x3drk2snn5m2x22knbvuob7v3p4o6licv2njbyaj26dzhb6a.ipfs.w3s.link/Marvel%20Studios'%20Avengers%EF%BC%9A%20Infinity%20War%20Official%20Trailer%20(1).mp4",
-   
+
+    8: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/The%20Grand%20Budapest%20Hotel%20-%20Official%20Trailer.mp4",
+
     9: "https://bafybeihuh7hm2v4osxrhb4yoign5umkmhgfnlp4i37qmjqrjx2jxv3g4yi.ipfs.w3s.link/Parasite%20-%20Official%20Trailer.mp4"
   };
 
@@ -61,15 +141,44 @@ const VideoPlayer = ({ movie }) => {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+      try {
+        if (!isPlaying) {
+          const contractMovieId = movie.id - 1;
+          await startStream(contractMovieId);
+          await videoRef.current.play();
+          startWatchTimeTracking();
+        } else {
+          videoRef.current.pause();
+          await stopWatchTimeTracking();
+        }
+        setIsPlaying(!isPlaying);
+      } catch (error) {
+        console.error("Error toggling play:", error);
       }
-      setIsPlaying(!isPlaying);
     }
+  };
+
+  useEffect(() => {
+    const handleUnmount = async () => {
+      if (isWatchTimeTracking) {
+        await stopWatchTimeTracking();
+      }
+    };
+
+    return () => {
+      if (billingIntervalRef.current) {
+        clearInterval(billingIntervalRef.current);
+      }
+      handleUnmount();
+    };
+  }, [isWatchTimeTracking, totalWatchTime]);
+  
+  const formatBilling = (watchTimeInSeconds) => {
+    const minutes = Math.ceil(watchTimeInSeconds / 60);
+    const cost = (minutes * RATE_PER_MINUTE).toFixed(4);
+    return `${cost} ETH`;
   };
 
   const handleVolumeChange = (e) => {
@@ -115,6 +224,31 @@ const VideoPlayer = ({ movie }) => {
       setShowSpeedMenu(false);
     }
   };
+  const processFinalPayment = async (watchTimeInSeconds) => {
+    try {
+      const minutes = Math.ceil(watchTimeInSeconds / 60);
+      const costInETH = minutes * RATE_PER_MINUTE;
+      const costInWei = ethers.utils.parseEther(costInETH.toString());
+
+      const contract = await getContract();
+
+      // Send transaction with value
+      const tx = await contract.processPayment(movie.id - 1, {
+        value: costInWei,
+        gasLimit: 500000 // Adjust gas limit as needed
+      });
+
+      // Wait for transaction confirmation
+      await tx.wait();
+
+      console.log(`Final payment processed: ${costInETH} ETH`);
+      return true;
+    } catch (error) {
+      console.error('Error processing final payment:', error);
+      return false;
+    }
+  };
+
 
   const skipTime = (seconds) => {
     if (videoRef.current) {
@@ -128,7 +262,7 @@ const VideoPlayer = ({ movie }) => {
         setIsLoading(false);
         setDuration(videoRef.current.duration);
       });
-      
+
       videoRef.current.addEventListener('timeupdate', () => {
         setCurrentTime(videoRef.current.currentTime);
       });
@@ -141,12 +275,13 @@ const VideoPlayer = ({ movie }) => {
 
     return () => {
       if (videoRef.current) {
-        videoRef.current.removeEventListener('loadeddata', () => {});
-        videoRef.current.removeEventListener('timeupdate', () => {});
-        videoRef.current.removeEventListener('error', () => {});
+        videoRef.current.removeEventListener('loadeddata', () => { });
+        videoRef.current.removeEventListener('timeupdate', () => { });
+        videoRef.current.removeEventListener('error', () => { });
       }
     };
   }, [movie]);
+  
 
   if (!movie) {
     return (
@@ -157,69 +292,77 @@ const VideoPlayer = ({ movie }) => {
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-full bg-black group"
-      onMouseMove={() => {
-        setShowControls(true);
-        if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current);
-        }
-        controlsTimeoutRef.current = setTimeout(() => {
-          if (isPlaying) setShowControls(false);
-        }, 3000);
-      }}
-    >
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-        </div>
-      )}
-      
-      <video
-        ref={videoRef}
-        src={getVideoUrl()}
-        poster={movie.image}
-        className="w-full h-full"
-        playsInline
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-      />
+    <div ref={containerRef} className="relative w-full h-full bg-black group">
+      <div
+        ref={containerRef}
+        className="relative w-full h-full bg-black group"
+        onMouseMove={() => {
+          setShowControls(true);
+          if (controlsTimeoutRef.current) {
+            clearTimeout(controlsTimeoutRef.current);
+          }
+          controlsTimeoutRef.current = setTimeout(() => {
+            if (isPlaying) setShowControls(false);
+          }, 3000);
+        }}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+          </div>
+        )}
 
-      {/* Custom Controls */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent 
+        <video
+          ref={videoRef}
+          src={getVideoUrl()}
+          poster={movie.image}
+          className="w-full h-full"
+          playsInline
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        />
+
+        {/* Custom Controls */}
+        <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent 
         transition-opacity duration-300 p-4 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={(currentTime / duration) * 100 || 0}
-            onChange={handleProgress}
-            className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, #00E5FF ${(currentTime / duration) * 100}%, rgba(255,255,255,0.3) ${(currentTime / duration) * 100}%)`
-            }}
-          />
-        </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Play/Pause */}
-            <button
-              onClick={togglePlay}
-              className="w-10 h-10 flex items-center justify-center bg-primary/90 rounded-full 
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={(currentTime / duration) * 100 || 0}
+              onChange={handleProgress}
+              className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #00E5FF ${(currentTime / duration) * 100}%, rgba(255,255,255,0.3) ${(currentTime / duration) * 100}%)`
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Play/Pause */}
+              <button
+                onClick={togglePlay}
+                className="w-10 h-10 flex items-center justify-center bg-primary/90 rounded-full 
                 hover:bg-primary transition-colors"
-            >
-              {isPlaying ? (
-                <FaPause className="w-4 h-4 text-white" />
-              ) : (
-                <FaPlay className="w-4 h-4 text-white transform translate-x-0.5" />
-              )}
-            </button>
-
+              >
+                {isPlaying ? (
+                  <FaPause className="w-4 h-4 text-white" />
+                ) : (
+                  <FaPlay className="w-4 h-4 text-white transform translate-x-0.5" />
+                )}
+              </button>
+              <div className="flex items-center gap-2 text-sm text-white">
+                <FaClock className="w-4 h-4 text-primary" />
+                <span>Watch Time: {formatTime(totalWatchTime)}</span>
+                <span className="text-primary ml-2">
+                  Cost: {formatBilling(totalWatchTime)}
+                </span>
+              </div>
+            </div>
             {/* Skip Backward/Forward */}
             <button
               onClick={() => skipTime(-10)}
@@ -302,7 +445,7 @@ const VideoPlayer = ({ movie }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
