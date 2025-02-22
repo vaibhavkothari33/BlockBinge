@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import screenfull from 'screenfull';
 import { startStream } from '../../utils/contract1';
+<<<<<<< HEAD
 import { ethers } from 'ethers';
 // import StreamingPlatform from '../../artifacts/contracts/StreamingPlatform.sol/StreamingPlatform.json';
 import { CreateContract } from '../../utils/contract1';
@@ -28,6 +29,9 @@ const getContract = async () => {
     throw error;
   }
 };
+=======
+
+>>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
 const updateWatchTime = async (movieId, duration) => {
   try {
     const contract = await getContract(); // Get your contract instance
@@ -87,12 +91,16 @@ const VideoPlayer = ({ movie }) => {
       }, BILLING_INTERVAL * 1000);
     }
   };
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
   const stopWatchTimeTracking = async () => {
     if (isWatchTimeTracking) {
       setIsWatchTimeTracking(false);
       clearInterval(billingIntervalRef.current);
+<<<<<<< HEAD
   
       // Final billing for remaining time
       const currentTime = Date.now();
@@ -105,6 +113,16 @@ const VideoPlayer = ({ movie }) => {
         
         // This will trigger MetaMask
         await processFinalPayment(newTotalWatchTime);
+=======
+
+      // Final billing for remaining time
+      const currentTime = Date.now();
+      const finalWatchDuration = (currentTime - watchTimeRef.current) / 1000;
+
+      if (finalWatchDuration > 0) {
+        await updateWatchTime(movie.id - 1, finalWatchDuration);
+        setTotalWatchTime(prev => prev + finalWatchDuration);
+>>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
       }
     }
   };
@@ -161,20 +179,29 @@ const VideoPlayer = ({ movie }) => {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     const handleUnmount = async () => {
       if (isWatchTimeTracking) {
         await stopWatchTimeTracking();
       }
     };
 
+=======
+>>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
     return () => {
       if (billingIntervalRef.current) {
         clearInterval(billingIntervalRef.current);
       }
+<<<<<<< HEAD
       handleUnmount();
     };
   }, [isWatchTimeTracking, totalWatchTime]);
   
+=======
+      stopWatchTimeTracking();
+    };
+  }, []);
+>>>>>>> cb77cd38751639f48e34efeba88da8dc7cbcb966
   const formatBilling = (watchTimeInSeconds) => {
     const minutes = Math.ceil(watchTimeInSeconds / 60);
     const cost = (minutes * RATE_PER_MINUTE).toFixed(4);
