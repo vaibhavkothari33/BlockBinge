@@ -11,13 +11,12 @@ import MyList from './components/MyList';
 import Search from './components/Search';
 import Profile from './components/Profile';
 import Marketplace from './components/Marketplace/Marketplace';
-import ClickSpark from './components/ClickSpark';
 import React, { useEffect } from 'react';
 import { WalletProvider } from './context/WalletContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoaderProvider } from './contexts/LoaderContext';
 import ChatBot from './components/ChatBot/ChatBot';
-
+import NotFound from './components/NotFound';
 
 function getLibrary(provider) {
   const library = new ethers.providers.Web3Provider(provider);
@@ -60,13 +59,6 @@ const App = () => {
         <WalletProvider>
           <LoaderProvider>
             <div className="min-h-screen bg-dark">
-              <ClickSpark
-                sparkColor='#fff'
-                sparkSize={10}
-                sparkRadius={15}
-                sparkCount={8}
-                duration={400}
-              />
               <Navbar />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
@@ -78,6 +70,7 @@ const App = () => {
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
               <ChatBot />
             </div>
