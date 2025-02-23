@@ -58,63 +58,63 @@ export const billSession = async (contentId, time) => {
       throw new Error(contract.error);
     }
 
-    // Convert time to minutes and calculate cost
+    // Convert time to minutes
     const timeInMinutes = Math.ceil(time / 60);
-    const costInEth = (timeInMinutes * 0.001).toFixed(4);
     
-    console.log(`Processing final bill for content ${contentId}, time: ${timeInMinutes} minutes, cost: ${costInEth} ETH`);
+    console.log(`Processing final bill for content ${contentId}, time: ${timeInMinutes} minutes`);
 
     try {
-      // Process the payment directly without addPendingPayment
-      const tx = await contract.processPayment(contentId, {
-        value: ethers.utils.parseEther(costInEth.toString()),
-        gasLimit: 500000
-      });
+      // Call billSession with contentId and timeInMinutes
+      const tx = await contract.billSession(
+        contentId,
+        timeInMinutes,
+        {
+          gasLimit: 500000
+        }
+      );
 
       const receipt = await tx.wait();
       
       if (receipt.status === 1) {
-        console.log("Payment processed successfully");
+        console.log("Session billed successfully");
+        
+        // Get pending payment amount after billing
+        const userAddress = await contract.signer.getAddress();
+        const pendingAmount = await contract.pendingPayments(userAddress);
+        const costInEth = ethers.utils.formatEther(pendingAmount);
+
         return {
           success: true,
-          cost: costInEth,
           timeInMinutes,
+          cost: costInEth,
           transactionHash: receipt.transactionHash,
-          paid: true
+          paid: false // Will need to verify payment separately
         };
       } else {
         throw new Error("Transaction failed");
       }
     } catch (error) {
+      console.error("Transaction error:", error);
+      
       if (error.code === 'ACTION_REJECTED') {
         return {
           success: false,
-          cost: costInEth,
           timeInMinutes,
           error: 'Transaction was rejected by user',
           paid: false
         };
       }
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        return {
-          success: false,
-          cost: costInEth,
-          timeInMinutes,
-          error: 'Insufficient funds in wallet',
-          paid: false
-        };
-      }
+
       return {
         success: false,
-        cost: costInEth,
         timeInMinutes,
-        error: error.message,
+        error: error.message || 'Transaction failed',
         paid: false
       };
     }
   } catch (error) {
     console.error("Error in billSession:", error);
-    throw new Error(`Payment failed: ${error.message}`);
+    throw new Error(`Billing failed: ${error.message}`);
   }
 };
 

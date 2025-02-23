@@ -8,7 +8,7 @@ const PaymentDialog = ({
   onPay, 
   isProcessing,
   timeInMinutes,
-  type = 'payment', // 'payment', 'error', 'warning'
+  type = 'payment', // 'payment', 'error', 'warning', 'info'
   message = '',
   title = 'Pending Payment'
 }) => {
@@ -36,7 +36,22 @@ const PaymentDialog = ({
         </div>
 
         <div className="space-y-4">
-          {type === 'payment' ? (
+          {type === 'info' ? (
+            <>
+              <p className="text-gray-300 text-base whitespace-pre-line">
+                {message}
+              </p>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={onClose}
+                  className="bg-primary hover:bg-primary-dark text-white font-medium py-3 px-6 rounded-lg 
+                    transition-colors"
+                >
+                  OK
+                </button>
+              </div>
+            </>
+          ) : type === 'payment' ? (
             <>
               <div className="bg-dark/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">

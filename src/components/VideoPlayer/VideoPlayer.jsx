@@ -244,26 +244,30 @@ const VideoPlayer = ({ movie }) => {
     if (videoRef.current) {
       try {
         if (!isPlaying) {
-          videoRef.current.play();
-          startWatchTimeTracking(); // Only local tracking
+          videoRef.current.play()
+            .then(() => {
+              setIsPlaying(true);
+              startWatchTimeTracking();
+            })
+            .catch(error => {
+              console.error("Error playing video:", error);
+              showDialog({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to play video'
+              });
+            });
         } else {
           videoRef.current.pause();
-          stopWatchTimeTracking(); // Only local tracking
-          // Show current bill calculation
-          const bill = calculateCurrentBill(totalWatchTime);
-          showDialog({
-            type: 'info',
-            title: 'Current Session',
-            message: `Watch Time: ${bill.formattedTime}\nEstimated Cost: ${bill.cost} ETH`,
-          });
+          setIsPlaying(false);
+          stopWatchTimeTracking();
         }
-        setIsPlaying(!isPlaying);
       } catch (error) {
         console.error("Error toggling play:", error);
         showDialog({
           type: 'error',
           title: 'Error',
-          message: error.message || 'Failed to start video'
+          message: error.message || 'Failed to control video'
         });
       }
     }
