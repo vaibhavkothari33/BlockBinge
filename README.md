@@ -1,7 +1,22 @@
-# BlockBinge
-## Blockchain-Based Video Streaming Platform
+<div align="center">
+
+# 🎬 BlockBinge - Decentralized Pay-Per-View Streaming Platform
+
+![BlockBinge Banner](public/banner.jpeg)
+
+> *Watch what you want, pay for what you watch. A revolutionary Web3 streaming platform powered by Reactive Smart Contracts.*
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Solidity](https://img.shields.io/badge/Solidity-%5E0.8.19-363636.svg)](https://soliditylang.org/)
+[![Reactive Smart Contracts](https://img.shields.io/badge/Reactive-Smart%20Contracts-blue.svg)](https://dev.reactive.network)
+[![Website](https://img.shields.io/badge/Website-Block%20Binge-blue)](https://blockbinge.vercel.app/)
+
+[View Demo](https://blockbinge.vercel.app/) | [Smart Contracts](https://github.com/AbhigyaKrishna/block-binge-contracts) | [Frontend Code](https://github.com/vaibhavkothari33/BlockBinge)
+
+</div>
 
 A decentralized video streaming platform built with React, Web3, and Ethereum smart contracts. This platform allows users to stream content while paying through cryptocurrency, featuring a pay-as-you-watch model.
+
 
 ## 🌟 Features
 
@@ -16,6 +31,103 @@ A decentralized video streaming platform built with React, Web3, and Ethereum sm
 - **Access Control via NFTs**: Exclusive content access for NFT holders
 - **Decentralized Storage**: Videos are stored on IPFS for censorship resistance
 
+
+## 🏗️ Architecture
+```mermaid
+flowchart TB
+    subgraph BlockBinge["BlockBinge Platform"]
+        subgraph Client["Client Application"]
+            UI["User Interface"]
+            Wallet["Web3 Wallet"]
+            Player["Video Player"]
+            NFTInterface["NFT Marketplace Interface"]
+            Timer["Play/ Pause"]
+            Window["Window Closed"]
+        end
+
+        subgraph Blockchain["Blockchain Layer"]
+            RSC1["RSC: Event Listener"]
+            RSC2["RSC: Billing Processor"]
+            RSC3["RSC: Payment Handler"]
+            SC["Smart Contracts"]
+            
+            subgraph NFTContracts["NFT System"]
+                NFTSC["NFT Smart Contracts"]
+                Market["NFT Marketplace Contract"]
+                Auction["Auction Contract"]
+            end
+
+            subgraph BillingSystem["Billing System"]
+                TimeTrack["Bill Calculation Contract"]
+                BillGen["Bill Generation"]
+                PayBlock["Payment Window"]
+            end
+        end
+
+        subgraph Storage["Decentralized Storage"]
+            IPFS["IPFS/Web3.Storage"]
+            LP["LivePeer"]
+            NFTS["NFT.Storage"]
+            
+            subgraph ContentStorage["Content Management"]
+                Meta["Metadata Storage"]
+                Assets["Video Assets"]
+                Chunks["Video Chunks"]
+                NFTMeta["NFT Metadata"]
+            end
+        end
+
+        subgraph AI["AI Layer"]
+            Rec["GenAI Engine"]
+        end
+
+        %% Basic Application Flow
+        UI --> Wallet
+        UI --> Player
+        UI --> NFTInterface
+        RSC1 --> RSC2
+        RSC2 --> RSC3
+        RSC3 --> Wallet
+        Timer --> Window
+        
+        %% NFT Flow
+        NFTInterface --> NFTSC
+        NFTSC --> Market
+        Market --> Auction
+        
+        %% Storage Flow
+        UI --> IPFS
+        Player --> LP
+        LP --> Assets
+        LP --> Chunks
+        IPFS --> Meta
+        NFTS --> NFTMeta
+        
+        %% AI Integration
+        UI --> Rec
+
+        %% Billing Flow
+        RSC1 --> TimeTrack
+        Player --> Timer
+        Window --> RSC2
+        TimeTrack --> BillGen
+        BillGen --> PayBlock
+        PayBlock --> RSC3
+
+        classDef blockchain fill:#f9f,stroke:#333,color:black,stroke-width:2px
+        classDef storage fill:#bbf,stroke:#333,color:black,stroke-width:2px
+        classDef client fill:#bfb,stroke:#333,color:black,stroke-width:2px
+        classDef ai fill:#ffb,stroke:#333,color:black,stroke-width:2px
+        classDef billing fill:#ff9,stroke:#333,color:black,stroke-width:2px
+        classDef platform fill:#fff,stroke:#333,color:black,stroke-width:2px
+        
+        class RSC1,RSC2,RSC3,SC,NFTSC,Market,Auction,TimeTrack,BillGen,PayBlock,BillingSystem blockchain
+        class IPFS,LP,Meta,Assets,Chunks,NFTMeta,NFTS storage
+        class UI,Wallet,Player,NFTInterface,Timer,Window client
+        class Rec ai
+        class BlockBinge platform
+    end
+```
 
 ## 🛠 Tech Stack
 
