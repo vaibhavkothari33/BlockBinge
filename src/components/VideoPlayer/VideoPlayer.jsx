@@ -13,10 +13,11 @@ import {
 } from 'react-icons/fa';
 import screenfull from 'screenfull';
 import { useNavigate } from 'react-router-dom';
-import { startStream } from '../../utils/contract1';
+import { debugContract, billSession, checkPendingPayments, handlePendingPayment } from '../../utils/contracts';
 import { ethers } from 'ethers';
 // import StreamingPlatform from '../../artifacts/contracts/StreamingPlatform.sol/StreamingPlatform.json';
-import { CreateContract } from '../../utils/contract1';
+import { CreateContract } from '../../utils/contracts';
+import PaymentDialog from '../PaymentDialog';
 
 // Remove the existing getContract function and use this instead
 const getContract = async () => {
@@ -75,6 +76,23 @@ const VideoPlayer = ({ movie }) => {
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
+  const [hasPendingPayment, setHasPendingPayment] = useState(false);
+  const [pendingAmount, setPendingAmount] = useState(0);
+
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentTime, setPaymentTime] = useState(0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const [dialogConfig, setDialogConfig] = useState({
+    isOpen: false,
+    type: 'payment',
+    title: '',
+    message: '',
+    amount: 0,
+    timeInMinutes: 0
+  });
+
   const startWatchTimeTracking = () => {
     if (!isWatchTimeTracking) {
       setIsWatchTimeTracking(true);
@@ -112,53 +130,89 @@ const VideoPlayer = ({ movie }) => {
     }
   };
 
+  // Helper function to show dialog
+  const showDialog = (config) => {
+    setDialogConfig({
+      isOpen: true,
+      ...config
+    });
+  };
+
   const handleClose = async () => {
     try {
       setIsClosing(true);
 
-      // Pause the video first
       if (videoRef.current) {
         videoRef.current.pause();
         setIsPlaying(false);
       }
 
-      // Stop tracking and get final watch time
       if (isWatchTimeTracking) {
         await stopWatchTimeTracking();
       }
 
-      // Process final payment
-      if (totalWatchTime > 0) {
-        await processFinalPayment(totalWatchTime);
+      // If watch time is 0 or less than minimum billable time, just redirect
+      if (totalWatchTime <= 0 || (Math.ceil(totalWatchTime / 60) * 0.001) === 0) {
+        navigate('/browse', { replace: true });
+        return;
       }
 
-      // Navigate back to browser route and refresh
-      navigate('/browse', { replace: true }); // Use replace to replace current history entry
-      window.location.reload(); // Force refresh the page
+      try {
+        const result = await billSession(movie.id - 1, totalWatchTime);
+        if (result.cost === '0.0000' || result.cost === 0) {
+          navigate('/browse', { replace: true });
+          return;
+        }
 
+        if (result.success && result.paid) {
+          console.log(`Payment processed: ${result.cost} ETH for ${result.timeInMinutes} minutes`);
+          navigate('/browse', { replace: true });
+        } else {
+          showDialog({
+            type: 'payment',
+            title: 'Payment Required',
+            amount: result.cost,
+            timeInMinutes: result.timeInMinutes
+          });
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        showDialog({
+          type: 'error',
+          title: 'Payment Error',
+          message: error.message || 'Failed to process payment. Please try again.'
+        });
+        setTimeout(() => navigate('/browse', { replace: true }), 3000);
+      }
     } catch (error) {
       console.error('Error during close:', error);
+      showDialog({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to close video. Please try again.'
+      });
     } finally {
       setIsClosing(false);
     }
   };
   const stopWatchTimeTracking = async () => {
-    if (isWatchTimeTracking) {
-      try {
-        setIsWatchTimeTracking(false);
+    try {
+      if (isWatchTimeTracking) {
         clearInterval(billingIntervalRef.current);
-
-        const currentTime = Date.now();
-        const finalWatchDuration = (currentTime - watchTimeRef.current) / 1000;
-
-        if (finalWatchDuration > 0) {
-          await updateWatchTime(movie.id - 1, finalWatchDuration);
-          const newTotalWatchTime = totalWatchTime + finalWatchDuration;
-          setTotalWatchTime(newTotalWatchTime);
+        setIsWatchTimeTracking(false);
+        
+        // Only update if there's actual watch time
+        if (watchTimeRef.current > 0) {
+          await updateWatchTime(movie.id - 1, watchTimeRef.current);
         }
-      } catch (error) {
-        console.error('Error in stopWatchTimeTracking:', error);
       }
+    } catch (error) {
+      console.error('Error stopping watch time tracking:', error);
+      showDialog({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to update watch time. Your session may not be recorded correctly.'
+      });
     }
   };
 
@@ -198,20 +252,30 @@ const VideoPlayer = ({ movie }) => {
 
   // Update togglePlay to only stop tracking
   const togglePlay = async () => {
+    if (hasPendingPayment) {
+      alert(`You have a pending payment of ${pendingAmount} ETH. Please settle this payment before watching more content.`);
+      return;
+    }
     if (videoRef.current) {
       try {
         if (!isPlaying) {
+          // Debug log to check contract functions
+          const availableFunctions = await debugContract();
+          console.log('Available contract functions:', availableFunctions);
+
           const contractMovieId = movie.id - 1;
-          await startStream(contractMovieId);
+          // await startStream(contractMovieId);
           await videoRef.current.play();
           startWatchTimeTracking();
         } else {
           videoRef.current.pause();
-          await stopWatchTimeTracking(); // This will now only stop tracking, not process payment
+          await stopWatchTimeTracking();
         }
         setIsPlaying(!isPlaying);
       } catch (error) {
         console.error("Error toggling play:", error);
+        // Show error to user
+        alert(`Error: ${error.message || 'Failed to start video'}`);
       }
     }
   };
@@ -342,6 +406,63 @@ const VideoPlayer = ({ movie }) => {
     };
   }, [movie]);
 
+  // Add a confirmation dialog before closing
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Add this useEffect to check for pending payments
+  useEffect(() => {
+    const checkPayments = async () => {
+      try {
+        const { hasPendingPayment, amount } = await checkPendingPayments();
+        if (hasPendingPayment) {
+          showDialog({
+            type: 'warning',
+            title: 'Pending Payment',
+            message: `You have a pending payment of ${amount} ETH. Please settle this payment before watching more content.`,
+            amount,
+            onPay: handlePayment // Pass the payment handler
+          });
+          handleClose();
+        }
+      } catch (error) {
+        console.error("Error checking payments:", error);
+        showDialog({
+          type: 'error',
+          title: 'Error',
+          message: 'Failed to check payment status. Please try again.'
+        });
+      }
+    };
+    
+    checkPayments();
+  }, []);
+
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const paid = await handlePendingPayment();
+      if (paid) {
+        setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        navigate('/browse', { replace: true });
+        window.location.reload();
+      } else {
+        showDialog({
+          type: 'error',
+          title: 'Payment Failed',
+          message: 'Unable to process payment. Please try again.'
+        });
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      showDialog({
+        type: 'error',
+        title: 'Payment Error',
+        message: error.message || 'Failed to process payment. Please try again.'
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   if (!movie) {
     return (
@@ -354,7 +475,7 @@ const VideoPlayer = ({ movie }) => {
   return (
     <div ref={containerRef} className="relative w-full h-full bg-black group">
       <button
-        onClick={handleClose}
+        onClick={() => setShowConfirmDialog(true)}
         className="absolute top-6 right-6 z-50 w-12 h-12 flex items-center justify-center 
   bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
       >
@@ -532,6 +653,46 @@ const VideoPlayer = ({ movie }) => {
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
       )}
+
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-dark-lighter p-6 rounded-xl max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">Confirm Exit</h3>
+            <p className="text-gray-300 mb-6">
+              You watched for {formatTime(totalWatchTime)}. 
+              Estimated cost: {(Math.ceil(totalWatchTime / 60) * 0.001).toFixed(4)} ETH
+            </p>
+            <div className="flex gap-4 justify-end">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 rounded-lg bg-dark hover:bg-dark-light transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  handleClose();
+                }}
+                className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 transition-colors"
+              >
+                Confirm & Pay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <PaymentDialog
+        {...dialogConfig}
+        onClose={() => {
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+          navigate('/browse', { replace: true });
+          window.location.reload();
+        }}
+        onPay={handlePayment}
+        isProcessing={isProcessingPayment}
+      />
 
     </div >
   );

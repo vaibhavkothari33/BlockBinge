@@ -12,6 +12,7 @@
   "dependencies": {
     "@auth0/auth0-react": "^2.0.0",
     "@ethersproject/providers": "^5.7.0",
+    "@google/generative-ai": "^0.22.0",
     "@livepeer/react": "^4.2.10",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@videojs/http-streaming": "^3.17.0",

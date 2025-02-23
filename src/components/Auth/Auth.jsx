@@ -37,7 +37,7 @@ const Auth = () => {
 
       {/* Auth Card */}
       <div className="relative z-10 w-full max-w-md p-8 bg-dark-lighter rounded-2xl shadow-xl backdrop-blur-sm">
-        <h2 className="text-2xl font-bold text-center mb-8">Welcome to Payper</h2>
+        <h2 className="text-2xl font-bold text-center mb-8">Welcome to BlockBinge</h2>
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
             {error}
