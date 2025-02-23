@@ -65,7 +65,7 @@ export const billSession = async (contentId, time) => {
     console.log(`Processing final bill for content ${contentId}, time: ${timeInMinutes} minutes, cost: ${costInEth} ETH`);
 
     try {
-      // Process the payment directly
+      // Process the payment directly without addPendingPayment
       const tx = await contract.processPayment(contentId, {
         value: ethers.utils.parseEther(costInEth.toString()),
         gasLimit: 500000
@@ -86,7 +86,6 @@ export const billSession = async (contentId, time) => {
         paid: true
       };
     } catch (error) {
-      // Return payment info even if transaction fails
       return {
         success: false,
         cost: costInEth,
@@ -218,31 +217,5 @@ export const debugContract = async () => {
     return Object.keys(contract.functions);
   } catch (error) {
     console.error("Debug error:", error);
-  }
-};
-
-// Update watch time function
-export const updateWatchTime = async (contentId, duration) => {
-  try {
-    const contract = await CreateContract();
-    if (isContractError(contract)) {
-      throw new Error(contract.error);
-    }
-
-    // Convert duration to appropriate format (if needed)
-    const durationInSeconds = Math.floor(duration);
-    
-    // Call the contract's startStream function instead of updateWatchTime
-    const tx = await contract.startStream(contentId);
-    await tx.wait();
-
-    console.log(`Updated watch time for content ${contentId}: ${durationInSeconds} seconds`);
-    return true;
-  } catch (error) {
-    console.error('Error updating watch time:', error);
-    if (error.code === 'ACTION_REJECTED') {
-      throw new Error('Transaction was rejected by user');
-    }
-    throw error;
   }
 };

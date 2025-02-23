@@ -93,40 +93,41 @@ const VideoPlayer = ({ movie }) => {
     timeInMinutes: 0
   });
 
+  const watchTimeIntervalRef = useRef(null);
+
   const startWatchTimeTracking = () => {
-    if (!isWatchTimeTracking) {
+    try {
+      // Only track time locally, no contract calls
+      watchTimeRef.current = 0;
       setIsWatchTimeTracking(true);
-      watchTimeRef.current = Date.now();
-      billingIntervalRef.current = setInterval(async () => {
-        const currentTime = Date.now();
-        const watchDuration = (currentTime - watchTimeRef.current) / 1000; // Convert to seconds
-
-        if (watchDuration >= BILLING_INTERVAL) {
-          // Update blockchain with watch time
-          const success = await updateWatchTime(movie.id - 1, watchDuration);
-
-          if (success) {
-            setTotalWatchTime(prev => prev + watchDuration);
-            setLastBillingTime(currentTime);
-            watchTimeRef.current = currentTime;
-          }
-        }
-      }, BILLING_INTERVAL * 1000);
+      watchTimeIntervalRef.current = setInterval(() => {
+        watchTimeRef.current += 1;
+        setTotalWatchTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting watch time tracking:', error);
+      showDialog({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to start streaming. Please try again.'
+      });
     }
   };
-  const getContract = async () => {
+
+  const stopWatchTimeTracking = () => {
     try {
-      if (!window.ethereum) throw new Error("No crypto wallet found");
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const contract = await CreateContract();
-
-      // Debug log to check available contract methods
-      console.log('Contract methods:', Object.keys(contract.functions));
-
-      return contract;
+      if (isWatchTimeTracking) {
+        clearInterval(watchTimeIntervalRef.current);
+        setIsWatchTimeTracking(false);
+        // No contract calls here either
+      }
     } catch (error) {
-      console.error('Error getting contract:', error);
-      throw error;
+      console.error('Error stopping watch time tracking:', error);
+      showDialog({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to stop streaming. Your session may not be recorded correctly.'
+      });
     }
   };
 
@@ -148,7 +149,7 @@ const VideoPlayer = ({ movie }) => {
       }
 
       if (isWatchTimeTracking) {
-        await stopWatchTimeTracking();
+        stopWatchTimeTracking();
       }
 
       // If watch time is 0 or less than minimum billable time, just redirect
@@ -195,27 +196,6 @@ const VideoPlayer = ({ movie }) => {
       setIsClosing(false);
     }
   };
-  const stopWatchTimeTracking = async () => {
-    try {
-      if (isWatchTimeTracking) {
-        clearInterval(billingIntervalRef.current);
-        setIsWatchTimeTracking(false);
-        
-        // Only update if there's actual watch time
-        if (watchTimeRef.current > 0) {
-          await updateWatchTime(movie.id - 1, watchTimeRef.current);
-        }
-      }
-    } catch (error) {
-      console.error('Error stopping watch time tracking:', error);
-      showDialog({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to update watch time. Your session may not be recorded correctly.'
-      });
-    }
-  };
-
 
   // Direct video URLs array
   const videoUrls = {
@@ -251,31 +231,34 @@ const VideoPlayer = ({ movie }) => {
   };
 
   // Update togglePlay to only stop tracking
-  const togglePlay = async () => {
+  const togglePlay = () => {
     if (hasPendingPayment) {
-      alert(`You have a pending payment of ${pendingAmount} ETH. Please settle this payment before watching more content.`);
+      showDialog({
+        type: 'warning',
+        title: 'Pending Payment',
+        message: `You have a pending payment of ${pendingAmount} ETH. Please settle this payment before watching more content.`,
+        amount: pendingAmount
+      });
       return;
     }
+    
     if (videoRef.current) {
       try {
         if (!isPlaying) {
-          // Debug log to check contract functions
-          const availableFunctions = await debugContract();
-          console.log('Available contract functions:', availableFunctions);
-
-          const contractMovieId = movie.id - 1;
-          // await startStream(contractMovieId);
-          await videoRef.current.play();
-          startWatchTimeTracking();
+          videoRef.current.play();
+          startWatchTimeTracking(); // Only local tracking
         } else {
           videoRef.current.pause();
-          await stopWatchTimeTracking();
+          stopWatchTimeTracking(); // Only local tracking
         }
         setIsPlaying(!isPlaying);
       } catch (error) {
         console.error("Error toggling play:", error);
-        // Show error to user
-        alert(`Error: ${error.message || 'Failed to start video'}`);
+        showDialog({
+          type: 'error',
+          title: 'Error',
+          message: error.message || 'Failed to start video'
+        });
       }
     }
   };
