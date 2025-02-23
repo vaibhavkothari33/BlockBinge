@@ -119,7 +119,6 @@ const VideoPlayer = ({ movie }) => {
       if (isWatchTimeTracking) {
         clearInterval(watchTimeIntervalRef.current);
         setIsWatchTimeTracking(false);
-        // No contract calls here either
       }
     } catch (error) {
       console.error('Error stopping watch time tracking:', error);
@@ -250,6 +249,13 @@ const VideoPlayer = ({ movie }) => {
         } else {
           videoRef.current.pause();
           stopWatchTimeTracking(); // Only local tracking
+          // Show current bill calculation
+          const bill = calculateCurrentBill(totalWatchTime);
+          showDialog({
+            type: 'info',
+            title: 'Current Session',
+            message: `Watch Time: ${bill.formattedTime}\nEstimated Cost: ${bill.cost} ETH`,
+          });
         }
         setIsPlaying(!isPlaying);
       } catch (error) {
@@ -459,8 +465,8 @@ const VideoPlayer = ({ movie }) => {
     <div ref={containerRef} className="relative w-full h-full bg-black group">
       <button
         onClick={() => setShowConfirmDialog(true)}
-        className="absolute top-6 right-6 z-50 w-12 h-12 flex items-center justify-center 
-  bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+        className="absolute top-5 right-4 z-50 w-15 h-15 flex items-center justify-center 
+  bg-black/50 hover:bg-black/80 bg-black rounded-full text-white transition-colors"
       >
         <svg
           className="w-8 h-8" // Increased from w-4 h-4

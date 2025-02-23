@@ -73,19 +73,37 @@ export const billSession = async (contentId, time) => {
 
       const receipt = await tx.wait();
       
-      const event = receipt.events?.find(e => e.event === 'PaymentProcessed');
-      if (!event) {
-        throw new Error("Payment transaction completed but no event emitted");
+      if (receipt.status === 1) {
+        console.log("Payment processed successfully");
+        return {
+          success: true,
+          cost: costInEth,
+          timeInMinutes,
+          transactionHash: receipt.transactionHash,
+          paid: true
+        };
+      } else {
+        throw new Error("Transaction failed");
       }
-
-      return {
-        success: true,
-        cost: costInEth,
-        timeInMinutes,
-        transactionHash: receipt.transactionHash,
-        paid: true
-      };
     } catch (error) {
+      if (error.code === 'ACTION_REJECTED') {
+        return {
+          success: false,
+          cost: costInEth,
+          timeInMinutes,
+          error: 'Transaction was rejected by user',
+          paid: false
+        };
+      }
+      if (error.code === 'INSUFFICIENT_FUNDS') {
+        return {
+          success: false,
+          cost: costInEth,
+          timeInMinutes,
+          error: 'Insufficient funds in wallet',
+          paid: false
+        };
+      }
       return {
         success: false,
         cost: costInEth,
@@ -116,23 +134,34 @@ export const handlePendingPayment = async () => {
       
       // Use verifyPayment with the exact pending amount
       const tx = await contract.verifyPayment({ 
-        value: pendingAmount, // Use the exact pending amount from contract
+        value: pendingAmount,
         gasLimit: 500000
       });
       
       const receipt = await tx.wait();
       
-      // Check for PaymentVerified event
-      const event = receipt.events?.find(e => e.event === 'PaymentVerified');
-      if (event) {
+      // Check if transaction was successful without relying on events
+      if (receipt.status === 1) {
         console.log("Payment verified successfully");
         console.log("Transaction hash:", receipt.transactionHash);
         console.log("Paid amount:", ethers.utils.formatEther(pendingAmount), "ETH");
-        return true;
-      } else {
-        console.log("Payment verification failed - no event emitted");
-        return false;
+
+        // Double check if pending payment was cleared
+        const newPendingAmount = await contract.pendingPayments(userAddress);
+        if (newPendingAmount.isZero()) {
+          return true;
+        }
       }
+
+      // Check remaining balance after transaction
+      const remainingBalance = await contract.pendingPayments(userAddress);
+      if (remainingBalance.isZero()) {
+        console.log("Payment verified - pending balance is zero");
+        return true;
+      }
+
+      console.log("Payment verification failed - pending balance remains");
+      return false;
     }
     return false;
   } catch (error) {
